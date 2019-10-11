@@ -24,61 +24,72 @@ namespace SystemStatsApp
     /// </summary>
     public partial class MainWindow : Window
     {
-        //List<float> AvailableCPU = new List<float>();
-        //List<float> AvailableRAM = new List<float>();
-
         protected PerformanceCounter cpuCounter;
         protected PerformanceCounter ramCounter;
         List<PerformanceCounter> cpuCounters = new List<PerformanceCounter>();
-        int cores = 0;
-        float lastRam = -1;
-        float lastCpuAvg = -1;
-        float lastCpuMax = -1;
+        int cores = 1;
+        int maxRam = 0;
 
         public MainWindow()
         {
             InitializeComponent();
         }
 
-        public void TimerElapsed(object source, ElapsedEventArgs e)
+        public float CpuAvg;
+        public float PreviousCpuAvg;
+        public float CpuAvgDelta;
+        public float PreviousCpuAvgDelta;
+        public float CpuTop;
+        public float PreviousCpuTop;
+        public float CpuTopDelta;
+        public float PreviousCpuTopDelta;
+        public float Mem;
+        public float PreviousMem;
+        public float MemDelta;
+        public float PreviousMemDelta;
+
+        public void DataTimerElapsed(object source, ElapsedEventArgs e)
         {
-            float cpuAvg = cpuCounter.NextValue();
-            float sum = 0;
-            float cpuMax = 0;
-            float cpuAvgDelta = 0;
-            float cpuMaxDelta = 0;
-            float ramDelta = 0;
+            PreviousCpuAvg = CpuAvg;
+            PreviousCpuAvgDelta = CpuAvgDelta;
+            PreviousCpuTop = CpuTop;
+            PreviousCpuTopDelta = CpuTopDelta;
+            PreviousMem = Mem;
+            PreviousMemDelta = MemDelta;
+
+            CpuAvg = cpuCounter.NextValue();
+            Mem = ramCounter.NextValue();
+
+            float cpuTopBuilder = 0;
             foreach (PerformanceCounter c in cpuCounters)
             {
                 var value = c.NextValue();
-                sum = sum + value;
-                cpuMax = Math.Max(cpuMax, value);
+                cpuTopBuilder = Math.Max(cpuTopBuilder, value);
             }
-            sum = sum / (cores);
-            float ram = ramCounter.NextValue();
+            CpuTop = cpuTopBuilder;
             
-            if (lastRam > -1)
+            if (PreviousMem > -1)
             {
                 // ram stores Free memory, but we want delta to increase as memory use increases
-                ramDelta = lastRam - ram;
-                cpuAvgDelta = cpuAvg - lastCpuAvg;
-                cpuMaxDelta = cpuMax - lastCpuMax;
+                MemDelta = PreviousMem - Mem;
+                CpuAvgDelta = CpuAvg - PreviousCpuAvg;
+                CpuTopDelta = CpuTop - PreviousCpuTopDelta;
             }
-            lastRam = ram;
-            lastCpuAvg = cpuAvg;
-            lastCpuMax = cpuMax;
+        }
 
-            CpuAvg.Dispatcher.BeginInvoke((Action)(() =>
+        public void AnimationTimerElapsed(object source, ElapsedEventArgs e)
+        {
+            this.Dispatcher.BeginInvoke((Action)(() =>
             {
-                CpuAvg.Value = cpuAvg;
-                CpuAvgInc.Value = cpuAvgDelta > 0 ? cpuAvgDelta : 0;
-                CpuAvgDec.Value = cpuAvgDelta < 0 ? -cpuAvgDelta : 0;
-                CpuMax.Value = cpuMax;
-                CpuMaxInc.Value = cpuMaxDelta > 0 ? cpuMaxDelta : 0;
-                CpuMaxDec.Value = cpuMaxDelta < 0 ? -cpuMaxDelta : 0;
-                Mem.Value = ram;
-                MemInc.Value = ramDelta > 0 ? ramDelta : 0;
-                MemDec.Value = ramDelta < 0 ? -ramDelta : 0;
+                CpuAvgBar.Value = CpuAvg;
+                CpuAvgInc.Value = CpuAvgDelta > 0 ? CpuAvgDelta : 0;
+                CpuAvgDec.Value = CpuAvgDelta < 0 ? -CpuAvgDelta : 0;
+                CpuTopBar.Value = CpuTop;
+                CpuTopInc.Value = CpuTopDelta > 0 ? CpuTopDelta : 0;
+                CpuTopDec.Value = CpuTopDelta < 0 ? -CpuTopDelta : 0;
+                MemBar.Value = Mem;
+                MemInc.Value = MemDelta > 0 ? MemDelta : 0;
+                MemDec.Value = MemDelta < 0 ? -MemDelta : 0;
             }));
         }
 
@@ -103,16 +114,12 @@ namespace SystemStatsApp
                 cpuCounters.Add(pc);
             }
 
-            try
-            {
-                System.Timers.Timer t = new System.Timers.Timer(1200);
-                t.Elapsed += new ElapsedEventHandler(TimerElapsed);
-                t.Start();
-            }
-            catch (Exception ex)
-            {
-                //StatusLabel.Text = ex.ToString();
-            }
+            System.Timers.Timer dataTimer = new System.Timers.Timer(1200);
+            dataTimer.Elapsed += new ElapsedEventHandler(DataTimerElapsed);
+            dataTimer.Start();
+            System.Timers.Timer animationTimer = new System.Timers.Timer(200);
+            dataTimer.Elapsed += new ElapsedEventHandler(AnimationTimerElapsed);
+            dataTimer.Start();
         }
     }
 }
