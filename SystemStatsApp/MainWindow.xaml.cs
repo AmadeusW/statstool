@@ -159,8 +159,6 @@ namespace SystemStatsApp
                 Console.WriteLine("Total Virtual Memory = " + item["TotalVirtualMemorySize"]);
                 AvailableRam = float.Parse(item["TotalVisibleMemorySize"].ToString());
                 MemBar.Maximum = AvailableRam/1024; // convert KB to MB
-                MemInc.Maximum = MemBar.Maximum / 10;
-                MemDec.Maximum = MemBar.Maximum / 10;
             }
 
             ramCounter = new PerformanceCounter("Memory", "Available MBytes");
