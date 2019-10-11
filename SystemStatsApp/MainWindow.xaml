@@ -33,12 +33,12 @@
                     <ProgressBar x:Name="CpuAvgInc"
                                  Width="15"
                                  Height="30"
-                                 Maximum="20"
+                                 Maximum="50"
                                  Minimum="0"/>
                     <ProgressBar x:Name="CpuAvgDec"
                                  Width="15"
                                  Height="30"
-                                 Maximum="20"
+                                 Maximum="50"
                                  Minimum="0">
                         <ProgressBar.RenderTransform>
                             <TransformGroup>
@@ -60,12 +60,12 @@
                     <ProgressBar x:Name="CpuTopInc"
                                 Width="15"
                                 Height="30"
-                                Maximum="20"
+                                Maximum="50"
                                 Minimum="0"/>
                     <ProgressBar x:Name="CpuTopDec"
                                 Width="15"
                                 Height="30"
-                                Maximum="20"
+                                Maximum="50"
                                 Minimum="0">
                         <ProgressBar.RenderTransform>
                             <TransformGroup>

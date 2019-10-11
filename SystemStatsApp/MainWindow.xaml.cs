@@ -1,21 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Management;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Timers;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace SystemStatsApp
 {
@@ -24,11 +12,14 @@ namespace SystemStatsApp
     /// </summary>
     public partial class MainWindow : Window
     {
+        private const int ProbingInterval = 1200;
+        private const int AnimationInterval = 100;
+        private const int AnimationFrames = 12; // ProbingInterval / AnimationInterval
         protected PerformanceCounter cpuCounter;
         protected PerformanceCounter ramCounter;
         List<PerformanceCounter> cpuCounters = new List<PerformanceCounter>();
         int cores = 1;
-        int maxRam = 0;
+        float AvailableRam = 0;
 
         public MainWindow()
         {
@@ -77,19 +68,41 @@ namespace SystemStatsApp
             }
         }
 
+        int animationFrame = 0;
         public void AnimationTimerElapsed(object source, ElapsedEventArgs e)
         {
+            if (animationFrame == AnimationFrames)
+                animationFrame = 0;
+            animationFrame++; // we want range 1-6
+
             this.Dispatcher.BeginInvoke((Action)(() =>
             {
-                CpuAvgBar.Value = CpuAvg;
-                CpuAvgInc.Value = CpuAvgDelta > 0 ? CpuAvgDelta : 0;
-                CpuAvgDec.Value = CpuAvgDelta < 0 ? -CpuAvgDelta : 0;
-                CpuTopBar.Value = CpuTop;
-                CpuTopInc.Value = CpuTopDelta > 0 ? CpuTopDelta : 0;
-                CpuTopDec.Value = CpuTopDelta < 0 ? -CpuTopDelta : 0;
-                MemBar.Value = Mem;
-                MemInc.Value = MemDelta > 0 ? MemDelta : 0;
-                MemDec.Value = MemDelta < 0 ? -MemDelta : 0;
+                var cpuAvgMovement = (CpuAvg - PreviousCpuAvg) / AnimationFrames;
+                var targetCpuAvg = PreviousCpuAvg + cpuAvgMovement * animationFrame;
+                var cpuAvgDeltaMovement = (CpuAvgDelta - PreviousCpuAvgDelta) / AnimationFrames;
+                var targetCpuAvgDelta = PreviousCpuAvgDelta + cpuAvgDeltaMovement * animationFrame;
+
+                CpuAvgBar.Value = targetCpuAvg;
+                CpuAvgInc.Value = targetCpuAvgDelta > 0 ? targetCpuAvgDelta : 0;
+                CpuAvgDec.Value = targetCpuAvgDelta < 0 ? -targetCpuAvgDelta : 0;
+
+                var cpuTopMovement = (CpuTop - PreviousCpuTop) / AnimationFrames;
+                var targetCpuTop = PreviousCpuTop + cpuTopMovement * animationFrame;
+                var cpuTopDeltaMovement = (CpuTopDelta - PreviousCpuTopDelta) / AnimationFrames;
+                var targetCpuTopDelta = PreviousCpuTopDelta + cpuTopDeltaMovement * animationFrame;
+
+                CpuTopBar.Value = targetCpuTop;
+                CpuTopInc.Value = targetCpuTopDelta > 0 ? targetCpuTopDelta : 0;
+                CpuTopDec.Value = targetCpuTopDelta < 0 ? -targetCpuTopDelta : 0;
+
+                var MemMovement = (Mem - PreviousMem) / AnimationFrames;
+                var targetMem = PreviousMem + MemMovement * animationFrame;
+                var memDeltaMovement = (MemDelta - PreviousMemDelta) / AnimationFrames;
+                var targetMemDelta = PreviousMemDelta + memDeltaMovement * animationFrame;
+
+                MemBar.Value = targetMem;
+                MemInc.Value = targetMemDelta > 0 ? targetMemDelta : 0;
+                MemDec.Value = targetMemDelta < 0 ? -targetMemDelta : 0;
             }));
         }
 
@@ -104,22 +117,35 @@ namespace SystemStatsApp
             {
                 cores = cores + int.Parse(item["NumberOfLogicalProcessors"].ToString());
             }
+            ObjectQuery winQuery = new ObjectQuery("SELECT * FROM CIM_OperatingSystem");
+
+            ManagementObjectSearcher searcher = new ManagementObjectSearcher(winQuery);
+
+            foreach (ManagementObject item in searcher.Get())
+            {
+                Console.WriteLine("Total Physical Memory = " + item["TotalVisibleMemorySize"]);
+                Console.WriteLine("Total Virtual Memory = " + item["TotalVirtualMemorySize"]);
+                AvailableRam = float.Parse(item["TotalVisibleMemorySize"].ToString());
+                MemBar.Maximum = AvailableRam/1024; // convert KB to MB
+                MemInc.Maximum = MemBar.Maximum / 10;
+                MemDec.Maximum = MemBar.Maximum / 10;
+            }
 
             ramCounter = new PerformanceCounter("Memory", "Available MBytes");
 
-            int procCount = System.Environment.ProcessorCount;
+            int procCount = Environment.ProcessorCount;
             for (int i = 0; i < procCount; i++)
             {
-                System.Diagnostics.PerformanceCounter pc = new System.Diagnostics.PerformanceCounter("Processor", "% Processor Time", i.ToString());
+                PerformanceCounter pc = new PerformanceCounter("Processor", "% Processor Time", i.ToString());
                 cpuCounters.Add(pc);
             }
 
-            System.Timers.Timer dataTimer = new System.Timers.Timer(1200);
+            Timer dataTimer = new Timer(ProbingInterval);
             dataTimer.Elapsed += new ElapsedEventHandler(DataTimerElapsed);
             dataTimer.Start();
-            System.Timers.Timer animationTimer = new System.Timers.Timer(200);
-            dataTimer.Elapsed += new ElapsedEventHandler(AnimationTimerElapsed);
-            dataTimer.Start();
+            Timer animationTimer = new Timer(AnimationInterval);
+            animationTimer.Elapsed += new ElapsedEventHandler(AnimationTimerElapsed);
+            animationTimer.Start();
         }
     }
 }
