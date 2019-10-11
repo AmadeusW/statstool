@@ -67,7 +67,7 @@ namespace SystemStatsApp
                     // ram stores Free memory, but we want delta to increase as memory use increases
                     MemDelta = PreviousMem - Mem;
                     CpuAvgDelta = CpuAvg - PreviousCpuAvg;
-                    CpuTopDelta = CpuTop - PreviousCpuTopDelta;
+                    CpuTopDelta = CpuTop - PreviousCpuTop;
                 }
 
                 // Reset the animation, so that it's smooth.
