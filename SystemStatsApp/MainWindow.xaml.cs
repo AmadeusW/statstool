@@ -15,9 +15,9 @@ namespace SystemStatsApp
         private const int ProbingInterval = 1200;
         private const int AnimationInterval = 100;
         private const int AnimationFrames = 12; // ProbingInterval / AnimationInterval
-        protected PerformanceCounter cpuCounter;
-        protected PerformanceCounter ramCounter;
-        List<PerformanceCounter> cpuCounters = new List<PerformanceCounter>();
+        protected PerformanceCounter CpuCounter;
+        protected PerformanceCounter RamCounter;
+        List<PerformanceCounter> CpuCounters = new List<PerformanceCounter>();
         int cores = 1;
         float AvailableRam = 0;
 
@@ -51,11 +51,11 @@ namespace SystemStatsApp
                 PreviousMem = Mem;
                 PreviousMemDelta = MemDelta;
 
-                CpuAvg = cpuCounter.NextValue();
-                Mem = ramCounter.NextValue();
+                CpuAvg = CpuCounter.NextValue();
+                Mem = RamCounter.NextValue();
 
                 float cpuTopBuilder = 0;
-                foreach (PerformanceCounter c in cpuCounters)
+                foreach (PerformanceCounter c in CpuCounters)
                 {
                     var value = c.NextValue();
                     cpuTopBuilder = Math.Max(cpuTopBuilder, value);
@@ -140,34 +140,26 @@ namespace SystemStatsApp
 
         private void OnWindowLoaded(object sender, RoutedEventArgs e)
         {
-            cpuCounter = new PerformanceCounter();
-            cpuCounter.CategoryName = "Processor";
-            cpuCounter.CounterName = "% Processor Time";
-            cpuCounter.InstanceName = "_Total";
-
-            foreach (var item in new ManagementObjectSearcher("Select * from Win32_Processor").Get())
-            {
-                cores = cores + int.Parse(item["NumberOfLogicalProcessors"].ToString());
-            }
-            ObjectQuery winQuery = new ObjectQuery("SELECT * FROM CIM_OperatingSystem");
-
-            ManagementObjectSearcher searcher = new ManagementObjectSearcher(winQuery);
-
-            foreach (ManagementObject item in searcher.Get())
-            {
-                Console.WriteLine("Total Physical Memory = " + item["TotalVisibleMemorySize"]);
-                Console.WriteLine("Total Virtual Memory = " + item["TotalVirtualMemorySize"]);
-                AvailableRam = float.Parse(item["TotalVisibleMemorySize"].ToString());
-                MemBar.Maximum = AvailableRam/1024; // convert KB to MB
-            }
-
-            ramCounter = new PerformanceCounter("Memory", "Available MBytes");
+            CpuCounter = new PerformanceCounter();
+            CpuCounter.CategoryName = "Processor";
+            CpuCounter.CounterName = "% Processor Time";
+            CpuCounter.InstanceName = "_Total";
 
             int procCount = Environment.ProcessorCount;
             for (int i = 0; i < procCount; i++)
             {
                 PerformanceCounter pc = new PerformanceCounter("Processor", "% Processor Time", i.ToString());
-                cpuCounters.Add(pc);
+                CpuCounters.Add(pc);
+            }
+
+            RamCounter = new PerformanceCounter("Memory", "Available MBytes");
+
+            ObjectQuery winQuery = new ObjectQuery("SELECT * FROM CIM_OperatingSystem");
+            ManagementObjectSearcher searcher = new ManagementObjectSearcher(winQuery);
+            foreach (ManagementObject item in searcher.Get())
+            {
+                AvailableRam = float.Parse(item["TotalVisibleMemorySize"].ToString());
+                MemBar.Maximum = AvailableRam / 1024; // convert KB to MB
             }
 
             Timer dataTimer = new Timer(ProbingInterval);

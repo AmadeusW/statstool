@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Loaded="OnWindowLoaded"
         Title="stats"
-        Width="130" Height="130"
+        Width="140" Height="130"
         Topmost="True"
         WindowStyle="ToolWindow"
         >
