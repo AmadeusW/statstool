@@ -93,20 +93,23 @@ namespace SystemStatsApp
 
                 lock (DataLock)
                 {
+                    // double the speed of animation, up to the value of AnimationFrames
+                    var effectiveFrame = (Math.Min(animationFrame * 2, AnimationFrames));
+
                     var cpuAvgMovement = (CpuAvg - PreviousCpuAvg) / AnimationFrames;
-                    targetCpuAvg = PreviousCpuAvg + cpuAvgMovement * animationFrame;
+                    targetCpuAvg = PreviousCpuAvg + cpuAvgMovement * effectiveFrame;
                     var cpuAvgDeltaMovement = (CpuAvgDelta - PreviousCpuAvgDelta) / AnimationFrames;
-                    targetCpuAvgDelta = PreviousCpuAvgDelta + cpuAvgDeltaMovement * animationFrame;
+                    targetCpuAvgDelta = PreviousCpuAvgDelta + cpuAvgDeltaMovement * effectiveFrame;
 
                     var cpuTopMovement = (CpuTop - PreviousCpuTop) / AnimationFrames;
-                    targetCpuTop = PreviousCpuTop + cpuTopMovement * animationFrame;
+                    targetCpuTop = PreviousCpuTop + cpuTopMovement * effectiveFrame;
                     var cpuTopDeltaMovement = (CpuTopDelta - PreviousCpuTopDelta) / AnimationFrames;
-                    targetCpuTopDelta = PreviousCpuTopDelta + cpuTopDeltaMovement * animationFrame;
+                    targetCpuTopDelta = PreviousCpuTopDelta + cpuTopDeltaMovement * effectiveFrame;
 
                     var MemMovement = (Mem - PreviousMem) / AnimationFrames;
-                    targetMem = PreviousMem + MemMovement * animationFrame;
+                    targetMem = PreviousMem + MemMovement * effectiveFrame;
                     var memDeltaMovement = (MemDelta - PreviousMemDelta) / AnimationFrames;
-                    targetMemDelta = PreviousMemDelta + memDeltaMovement * animationFrame;
+                    targetMemDelta = PreviousMemDelta + memDeltaMovement * effectiveFrame;
                 }
 
                 CpuAvgBar.Value = targetCpuAvg;
