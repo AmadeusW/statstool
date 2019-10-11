@@ -120,6 +120,18 @@ namespace SystemStatsApp
                 MemBar.Value = targetMem;
                 MemInc.Value = targetMemDelta > 0 ? targetMemDelta : 0;
                 MemDec.Value = targetMemDelta < 0 ? -targetMemDelta : 0;
+
+                CpuAvgBar.ToolTip = $"{CpuAvg:0}%";
+                CpuAvgInc.ToolTip = $"Δ {CpuAvgDelta:0}%";
+                CpuAvgDec.ToolTip = $"Δ {CpuAvgDelta:0}%";
+
+                CpuTopBar.ToolTip = $"{CpuTop:0}%";
+                CpuTopInc.ToolTip = $"Δ {CpuTopDelta:0}%";
+                CpuTopDec.ToolTip = $"Δ {CpuTopDelta:0}%";
+
+                MemBar.ToolTip = $"{Mem/1024:0.00} GB";
+                MemInc.ToolTip = $"Δ {MemDelta:0} MB";
+                MemDec.ToolTip = $"Δ {MemDelta:0} MB";
             }));
         }
 
