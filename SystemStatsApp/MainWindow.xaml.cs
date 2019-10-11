@@ -38,33 +38,40 @@ namespace SystemStatsApp
         public float PreviousMem;
         public float MemDelta;
         public float PreviousMemDelta;
+        private object DataLock = new object();
 
         public void DataTimerElapsed(object source, ElapsedEventArgs e)
         {
-            PreviousCpuAvg = CpuAvg;
-            PreviousCpuAvgDelta = CpuAvgDelta;
-            PreviousCpuTop = CpuTop;
-            PreviousCpuTopDelta = CpuTopDelta;
-            PreviousMem = Mem;
-            PreviousMemDelta = MemDelta;
-
-            CpuAvg = cpuCounter.NextValue();
-            Mem = ramCounter.NextValue();
-
-            float cpuTopBuilder = 0;
-            foreach (PerformanceCounter c in cpuCounters)
+            lock (DataLock)
             {
-                var value = c.NextValue();
-                cpuTopBuilder = Math.Max(cpuTopBuilder, value);
-            }
-            CpuTop = cpuTopBuilder;
-            
-            if (PreviousMem > -1)
-            {
-                // ram stores Free memory, but we want delta to increase as memory use increases
-                MemDelta = PreviousMem - Mem;
-                CpuAvgDelta = CpuAvg - PreviousCpuAvg;
-                CpuTopDelta = CpuTop - PreviousCpuTopDelta;
+                PreviousCpuAvg = CpuAvg;
+                PreviousCpuAvgDelta = CpuAvgDelta;
+                PreviousCpuTop = CpuTop;
+                PreviousCpuTopDelta = CpuTopDelta;
+                PreviousMem = Mem;
+                PreviousMemDelta = MemDelta;
+
+                CpuAvg = cpuCounter.NextValue();
+                Mem = ramCounter.NextValue();
+
+                float cpuTopBuilder = 0;
+                foreach (PerformanceCounter c in cpuCounters)
+                {
+                    var value = c.NextValue();
+                    cpuTopBuilder = Math.Max(cpuTopBuilder, value);
+                }
+                CpuTop = cpuTopBuilder;
+
+                if (PreviousMem > -1)
+                {
+                    // ram stores Free memory, but we want delta to increase as memory use increases
+                    MemDelta = PreviousMem - Mem;
+                    CpuAvgDelta = CpuAvg - PreviousCpuAvg;
+                    CpuTopDelta = CpuTop - PreviousCpuTopDelta;
+                }
+
+                // Reset the animation, so that it's smooth.
+                animationFrame = 0;
             }
         }
 
@@ -73,32 +80,42 @@ namespace SystemStatsApp
         {
             if (animationFrame == AnimationFrames)
                 animationFrame = 0;
-            animationFrame++; // we want range 1-6
+            animationFrame++; // we want range 1-AnimationFrames
 
             this.Dispatcher.BeginInvoke((Action)(() =>
             {
-                var cpuAvgMovement = (CpuAvg - PreviousCpuAvg) / AnimationFrames;
-                var targetCpuAvg = PreviousCpuAvg + cpuAvgMovement * animationFrame;
-                var cpuAvgDeltaMovement = (CpuAvgDelta - PreviousCpuAvgDelta) / AnimationFrames;
-                var targetCpuAvgDelta = PreviousCpuAvgDelta + cpuAvgDeltaMovement * animationFrame;
+                float targetCpuAvg;
+                float targetCpuAvgDelta;
+                float targetCpuTop;
+                float targetCpuTopDelta;
+                float targetMem;
+                float targetMemDelta;
+
+                lock (DataLock)
+                {
+                    var cpuAvgMovement = (CpuAvg - PreviousCpuAvg) / AnimationFrames;
+                    targetCpuAvg = PreviousCpuAvg + cpuAvgMovement * animationFrame;
+                    var cpuAvgDeltaMovement = (CpuAvgDelta - PreviousCpuAvgDelta) / AnimationFrames;
+                    targetCpuAvgDelta = PreviousCpuAvgDelta + cpuAvgDeltaMovement * animationFrame;
+
+                    var cpuTopMovement = (CpuTop - PreviousCpuTop) / AnimationFrames;
+                    targetCpuTop = PreviousCpuTop + cpuTopMovement * animationFrame;
+                    var cpuTopDeltaMovement = (CpuTopDelta - PreviousCpuTopDelta) / AnimationFrames;
+                    targetCpuTopDelta = PreviousCpuTopDelta + cpuTopDeltaMovement * animationFrame;
+
+                    var MemMovement = (Mem - PreviousMem) / AnimationFrames;
+                    targetMem = PreviousMem + MemMovement * animationFrame;
+                    var memDeltaMovement = (MemDelta - PreviousMemDelta) / AnimationFrames;
+                    targetMemDelta = PreviousMemDelta + memDeltaMovement * animationFrame;
+                }
 
                 CpuAvgBar.Value = targetCpuAvg;
                 CpuAvgInc.Value = targetCpuAvgDelta > 0 ? targetCpuAvgDelta : 0;
                 CpuAvgDec.Value = targetCpuAvgDelta < 0 ? -targetCpuAvgDelta : 0;
 
-                var cpuTopMovement = (CpuTop - PreviousCpuTop) / AnimationFrames;
-                var targetCpuTop = PreviousCpuTop + cpuTopMovement * animationFrame;
-                var cpuTopDeltaMovement = (CpuTopDelta - PreviousCpuTopDelta) / AnimationFrames;
-                var targetCpuTopDelta = PreviousCpuTopDelta + cpuTopDeltaMovement * animationFrame;
-
                 CpuTopBar.Value = targetCpuTop;
                 CpuTopInc.Value = targetCpuTopDelta > 0 ? targetCpuTopDelta : 0;
                 CpuTopDec.Value = targetCpuTopDelta < 0 ? -targetCpuTopDelta : 0;
-
-                var MemMovement = (Mem - PreviousMem) / AnimationFrames;
-                var targetMem = PreviousMem + MemMovement * animationFrame;
-                var memDeltaMovement = (MemDelta - PreviousMemDelta) / AnimationFrames;
-                var targetMemDelta = PreviousMemDelta + memDeltaMovement * animationFrame;
 
                 MemBar.Value = targetMem;
                 MemInc.Value = targetMemDelta > 0 ? targetMemDelta : 0;

@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Loaded="OnWindowLoaded"
         Title="stats"
-        Width="130" Height="120"
+        Width="130" Height="130"
         Topmost="True"
         WindowStyle="ToolWindow"
         >
@@ -31,12 +31,12 @@
                              Height="60"/>
                 <StackPanel Orientation="Vertical">
                     <ProgressBar x:Name="CpuAvgInc"
-                                 Width="15"
+                                 Width="7"
                                  Height="30"
                                  Maximum="50"
                                  Minimum="0"/>
                     <ProgressBar x:Name="CpuAvgDec"
-                                 Width="15"
+                                 Width="7"
                                  Height="30"
                                  Maximum="50"
                                  Minimum="0">
@@ -58,12 +58,12 @@
                             Height="60"/>
                 <StackPanel Orientation="Vertical">
                     <ProgressBar x:Name="CpuTopInc"
-                                Width="15"
+                                Width="7"
                                 Height="30"
                                 Maximum="50"
                                 Minimum="0"/>
                     <ProgressBar x:Name="CpuTopDec"
-                                Width="15"
+                                Width="7"
                                 Height="30"
                                 Maximum="50"
                                 Minimum="0">
@@ -87,12 +87,12 @@
                         Maximum="32000" />
                     <StackPanel Orientation="Vertical">
                         <ProgressBar x:Name="MemInc"
-                            Width="15"
+                            Width="7"
                             Height="30"
                             Maximum="100"
                             Minimum="0"/>
                         <ProgressBar x:Name="MemDec"
-                            Width="15"
+                            Width="7"
                             Height="30"
                             Maximum="100"
                             Minimum="0">
